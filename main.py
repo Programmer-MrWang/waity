@@ -28,6 +28,17 @@ def get_resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
+def format_time(seconds: int) -> str:
+    """将秒数格式化为 X 分 X 秒 或 X 秒"""
+    if seconds >= 60:
+        minutes = seconds // 60
+        rem_seconds = seconds % 60
+        if rem_seconds == 0:
+            return f" {minutes} 分钟"
+        return f" {minutes} 分 {rem_seconds} 秒"
+    return f" {seconds} 秒"
+
+
 class ShutdownMessageBox(MessageBoxBase):
     """基于 MessageBoxBase 的关机提示框"""
 
@@ -41,8 +52,9 @@ class ShutdownMessageBox(MessageBoxBase):
 
     def _setup_content(self) -> None:
         title = TitleLabel("即将关机", self)
+        time_text = format_time(self.remaining)
         self.subtitle_label = SubtitleLabel(
-            f"计算机将在 {self.remaining} 秒后自动关闭。请及时保存您的工作或选择其他操作。", self
+            f"计算机将在{time_text}后自动关闭。请及时保存您的工作或选择其他操作。", self
         )
 
         self.viewLayout.addWidget(title)
@@ -54,9 +66,10 @@ class ShutdownMessageBox(MessageBoxBase):
         self.cancelButton.hide()
 
         # 创建自定义按钮
+        delay_text = format_time(self.args.delay)
         self.primary_btn = PrimaryPushButton(FluentIcon.CHECKBOX, "已阅", self)
         self.secondary_btn = PushButton(FluentIcon.POWER_BUTTON, "立即关机", self)
-        self.third_btn = PushButton(FluentIcon.DATE_TIME, f"延迟 {self.args.delay} 分钟", self)
+        self.third_btn = PushButton(FluentIcon.DATE_TIME, f"延迟 {delay_text}", self)
         self.close_btn = PushButton(FluentIcon.CLOSE, "取消关机计划", self)
 
         self.buttonLayout.addWidget(self.primary_btn)
@@ -66,8 +79,9 @@ class ShutdownMessageBox(MessageBoxBase):
         self.buttonLayout.addWidget(self.close_btn)
 
     def update_subtitle(self) -> None:
+        time_text = format_time(self.remaining)
         self.subtitle_label.setText(
-            f"计算机将在 {self.remaining} 秒后自动关闭。请及时保存您的工作或选择其他操作。"
+            f"计算机将在{time_text}后自动关闭。请及时保存您的工作或选择其他操作。"
         )
 
 
@@ -120,15 +134,17 @@ class MainWindow(QWidget):
     def _init_tray(self):
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.setIcon(QIcon(self.icon_path))
-        self.tray_icon.setToolTip(f"Waity：{self.remaining} 秒后自动关机")
+        time_text = format_time(self.remaining)
+        self.tray_icon.setToolTip(f"Waity：{time_text}后自动关机")
 
         # 创建托盘菜单
         tray_menu = QMenu()
 
-        self.time_action = QAction(f"剩余时间：{self.remaining} 秒", self)
+        self.time_action = QAction(f"剩余时间：{time_text}", self)
         tray_menu.addAction(self.time_action)
 
-        delay_action = QAction(f"延迟 {self.args.delay} 分钟", self)
+        delay_text = format_time(self.args.delay)
+        delay_action = QAction(f"延迟 {delay_text}", self)
         delay_action.triggered.connect(self.on_third_clicked)
         tray_menu.addAction(delay_action)
 
@@ -142,16 +158,14 @@ class MainWindow(QWidget):
 
     def on_tray_activated(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
-            self.showFullScreen()
-            self.message_box.show()
-            self.raise_()
-            self.activateWindow()
+            self.show_reminder()
 
     def update_ui(self):
         self.message_box.remaining = self.remaining
         self.message_box.update_subtitle()
-        self.time_action.setText(f"剩余时间：{self.remaining} 秒")
-        self.tray_icon.setToolTip(f"Waity：{self.remaining} 秒后自动关机")
+        time_text = format_time(self.remaining)
+        self.time_action.setText(f"剩余时间：{time_text}")
+        self.tray_icon.setToolTip(f"Waity：{time_text}后自动关机")
 
     def closeEvent(self, event):
         event.ignore()
@@ -159,12 +173,22 @@ class MainWindow(QWidget):
 
     def update_countdown(self):
         self.remaining -= 1
+        if self.remaining == self.args.reminder:
+            self.show_reminder()
+
         if self.remaining > 0:
             self.update_ui()
         else:
             self.timer.stop()
             # 执行关机
             self.perform_shutdown()
+
+    def show_reminder(self):
+        """显示提醒窗口"""
+        self.showFullScreen()
+        self.message_box.show()
+        self.raise_()
+        self.activateWindow()
 
     def perform_shutdown(self):
         # 这里添加关机命令
@@ -190,10 +214,10 @@ class MainWindow(QWidget):
 
     def on_third_clicked(self):
         if hasattr(self, 'timer') and self.timer.isActive():
-            self.remaining += self.args.delay * 60
+            self.remaining += self.args.delay
             self.update_ui()
         else:
-            self.remaining = self.args.delay * 60
+            self.remaining = self.args.delay
             self.timer = QTimer(self)
             self.timer.timeout.connect(self.update_countdown)
             self.timer.start(1000)
@@ -206,12 +230,17 @@ class MainWindow(QWidget):
 def main() -> None:
     parser = argparse.ArgumentParser(description='Waity')
     parser.add_argument('--countdown', type=int, default=60, help='倒计时时长（秒），默认 60 秒')
-    parser.add_argument('--delay', type=int, default=3, help='延迟选项时长（分钟），默认 3 分钟')
+    parser.add_argument('--delay', type=int, default=180, help='延迟选项时长（秒），默认 180 秒（3 分钟）')
+    parser.add_argument('--reminder', type=int, default=60, help='关机前再次提醒的时长（秒），默认 60 秒')
     parser.add_argument('--show-in-taskbar', action='store_true', help='显示在任务栏中（默认不显示）')
     args = parser.parse_args()
 
-    if args.countdown <= 0 or args.delay <= 0:
-        print("错误：--countdown 和 --delay 必须是非零自然数")
+    if args.countdown <= 0 or args.delay <= 0 or args.reminder < 0:
+        print("错误：--countdown 和 --delay 必须是非零自然数，--reminder 必须是非负整数")
+        sys.exit(1)
+
+    if args.reminder > args.delay:
+        print("错误：--reminder 必须小于或等于 --delay")
         sys.exit(1)
 
     app = QApplication(sys.argv)

@@ -55,18 +55,21 @@ uv run main.py
 
 ### 使用参数启动
 
-Waity 支持通过命令行参数自定义启动行为。您可以组合使用 `--countdown` 和 `--delay` 参数来满足不同需求。
+Waity 支持通过命令行参数自定义启动行为。您可以组合使用 `--countdown`、`--delay` 和 `--reminder` 参数来满足不同需求。
 
 #### 参数说明
 
-| 参数 | 含义 | 默认值 |
-|------|------|--------|
-| `--countdown` | 倒计时时长（秒） | 60 |
-| `--delay` | 延迟选项时长（分钟） | 3 |
-| `--show-in-taskbar` | 显示在任务栏中 | 无（不显示） |
+| 参数 | 含义 | 单位 | 默认值 |
+|------|------|------|--------|
+| `--countdown` | 启动时的倒计时时长 | 秒 | 60 |
+| `--delay` | 点击“延迟”按钮增加的时长 | 秒 | 180 |
+| `--reminder` | 再次弹出提醒的时间点 | 秒 | 60 |
+| `--show-in-taskbar` | 是否在任务栏中显示图标 | - | 不显示 |
 
 > [!IMPORTANT]
-> 参数必须为非零自然数。
+> - `--countdown` 和 `--delay` 必须为大于 0 的整数。
+> - `--reminder` 必须为大于等于 0 的整数。
+> - `--reminder` 必须小于或等于 `--delay`。
 
 #### 样例
 
@@ -78,12 +81,14 @@ Waity 支持通过命令行参数自定义启动行为。您可以组合使用 `
 ```
 
 ```shell
-.\main.exe --delay 10  # 设置延迟选项为 “延迟 10 分钟”
+.\main.exe --delay 600  # 设置延迟选项为 “延迟 10 分钟”
 ```
 
 ```shell
-.\run main.exe --countdown 600 --delay 5
+.\main.exe --countdown 600 --delay 300 --reminder 60
+# 10 分钟后关机，延迟按钮加 5 分钟，最后 60 秒再次弹窗提醒
 ```
+
 ```shell
 .\main.exe --show-in-taskbar  # 显示在任务栏中
 ```
