@@ -14,7 +14,9 @@ from qfluentwidgets import (
     Theme,
     TitleLabel,
     setTheme,
+    setThemeColor,
 )
+from qframelesswindow.utils import getSystemAccentColor
 
 
 def get_resource_path(relative_path):
@@ -92,6 +94,9 @@ class MainWindow(QWidget):
         super().__init__()
         self.args = args
         setTheme(Theme.AUTO)
+        # 获取系统主题色（仅 Windows 和 macOS）
+        if sys.platform in ["win32", "darwin"]:
+            setThemeColor(getSystemAccentColor(), save=False)
         self.icon_path = get_resource_path("icon.png")
 
         # 设置全屏透明窗口
