@@ -75,7 +75,7 @@ class ShutdownMessageBox(MessageBoxBase):
         delay_text = format_time(self.args.delay)
         self.primary_btn = PrimaryPushButton(FluentIcon.ACCEPT, "已阅", self)
         self.secondary_btn = PushButton(FluentIcon.POWER_BUTTON, "立即关机", self)
-        self.third_btn = PushButton(FluentIcon.DATE_TIME, f"延迟 {delay_text}", self)
+        self.third_btn = PushButton(FluentIcon.DATE_TIME, f"延迟{delay_text}", self)
         self.close_btn = PushButton(FluentIcon.CLOSE, "取消关机计划", self)
 
         self.buttonLayout.addWidget(self.primary_btn)
