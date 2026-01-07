@@ -102,16 +102,26 @@ class ShutdownMessageBox(MessageBoxBase):
                     QApplication.beep()
 
             if not self.args.no_shake:
+                # 如果动画正在运行，先停止并复位，防止偏移累积
+                if hasattr(self, 'ani') and self.ani.state() == QPropertyAnimation.Running:
+                    self.ani.stop()
+                    self.widget.move(self.ani.startValue())
+
                 # 抖动动画
                 pos = self.widget.pos()
                 self.ani = QPropertyAnimation(self.widget, b"pos")
-                self.ani.setDuration(300)
+                self.ani.setDuration(500)
                 self.ani.setStartValue(pos)
-                self.ani.setKeyValueAt(0.1, pos + QPoint(-5, 0))
-                self.ani.setKeyValueAt(0.3, pos + QPoint(5, 0))
-                self.ani.setKeyValueAt(0.5, pos + QPoint(-5, 0))
-                self.ani.setKeyValueAt(0.7, pos + QPoint(5, 0))
-                self.ani.setKeyValueAt(0.9, pos + QPoint(-5, 0))
+                # 衰减抖动效果
+                self.ani.setKeyValueAt(0.1, pos + QPoint(-10, 0))
+                self.ani.setKeyValueAt(0.2, pos + QPoint(10, 0))
+                self.ani.setKeyValueAt(0.3, pos + QPoint(-8, 0))
+                self.ani.setKeyValueAt(0.4, pos + QPoint(8, 0))
+                self.ani.setKeyValueAt(0.5, pos + QPoint(-6, 0))
+                self.ani.setKeyValueAt(0.6, pos + QPoint(6, 0))
+                self.ani.setKeyValueAt(0.7, pos + QPoint(-4, 0))
+                self.ani.setKeyValueAt(0.8, pos + QPoint(4, 0))
+                self.ani.setKeyValueAt(0.9, pos + QPoint(-2, 0))
                 self.ani.setEndValue(pos)
                 self.ani.start()
         super().mousePressEvent(event)
