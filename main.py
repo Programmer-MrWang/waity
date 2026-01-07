@@ -6,13 +6,13 @@ from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, Q
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtGui import QIcon, QAction
 from qfluentwidgets import (
+    BodyLabel,
     FluentIcon,
     MessageBoxBase,
     PrimaryPushButton,
     PushButton,
     SubtitleLabel,
     Theme,
-    TitleLabel,
     setTheme,
     setThemeColor,
 )
@@ -49,18 +49,22 @@ class ShutdownMessageBox(MessageBoxBase):
         self.args = args
         self.remaining = args.countdown if args.countdown else 60
 
+        # 设置固定宽度
+        self.widget.setFixedWidth(580)
+
         self._setup_content()
         self._setup_buttons()
 
     def _setup_content(self) -> None:
-        title = TitleLabel("即将关机", self)
+        self.titleLabel = SubtitleLabel("即将关机", self)
         time_text = format_time(self.remaining)
-        self.subtitle_label = SubtitleLabel(
+        self.contentLabel = BodyLabel(
             f"计算机将在{time_text}后自动关闭。请及时保存您的工作或选择其他操作。", self
         )
+        self.contentLabel.setWordWrap(True)
 
-        self.viewLayout.addWidget(title)
-        self.viewLayout.addWidget(self.subtitle_label)
+        self.viewLayout.addWidget(self.titleLabel)
+        self.viewLayout.addWidget(self.contentLabel)
 
     def _setup_buttons(self) -> None:
         # 隐藏默认按钮
@@ -69,7 +73,7 @@ class ShutdownMessageBox(MessageBoxBase):
 
         # 创建自定义按钮
         delay_text = format_time(self.args.delay)
-        self.primary_btn = PrimaryPushButton(FluentIcon.CHECKBOX, "已阅", self)
+        self.primary_btn = PrimaryPushButton(FluentIcon.ACCEPT, "已阅", self)
         self.secondary_btn = PushButton(FluentIcon.POWER_BUTTON, "立即关机", self)
         self.third_btn = PushButton(FluentIcon.DATE_TIME, f"延迟 {delay_text}", self)
         self.close_btn = PushButton(FluentIcon.CLOSE, "取消关机计划", self)
@@ -82,7 +86,7 @@ class ShutdownMessageBox(MessageBoxBase):
 
     def update_subtitle(self) -> None:
         time_text = format_time(self.remaining)
-        self.subtitle_label.setText(
+        self.contentLabel.setText(
             f"计算机将在{time_text}后自动关闭。请及时保存您的工作或选择其他操作。"
         )
 
@@ -126,6 +130,7 @@ class MainWindow(QWidget):
         # 创建消息框
         self.message_box = ShutdownMessageBox(self, self.args)
         self.message_box.remaining = self.remaining
+        self.message_box.update_subtitle()
 
         # 连接按钮信号
         self.message_box.primary_btn.clicked.connect(self.on_primary_clicked)
