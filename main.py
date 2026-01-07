@@ -2,16 +2,18 @@ import sys
 import argparse
 import os
 
-from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, QSystemTrayIcon, QMenu
+from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, QSystemTrayIcon
 from PySide6.QtCore import QTimer, Qt, QPropertyAnimation, QEasingCurve, QPoint
-from PySide6.QtGui import QIcon, QAction
+from PySide6.QtGui import QIcon
 from qfluentwidgets import (
+    Action,
     BodyLabel,
     FluentIcon,
     MessageBoxBase,
     PrimaryPushButton,
     PushButton,
     SubtitleLabel,
+    SystemTrayMenu,
     Theme,
     setTheme,
     setThemeColor,
@@ -115,6 +117,34 @@ class ShutdownMessageBox(MessageBoxBase):
         super().mousePressEvent(event)
 
 
+class SystemTrayIcon(QSystemTrayIcon):
+    """系统托盘图标"""
+
+    def __init__(self, parent):
+        super().__init__(parent=parent)
+        self.setIcon(parent.windowIcon())
+
+        self.menu = SystemTrayMenu(parent=parent)
+
+        # 倒计时信息
+        time_text = format_time(parent.remaining)
+        self.time_action = Action(FluentIcon.HISTORY, f"剩余时间：{time_text}", parent)
+        self.menu.addAction(self.time_action)
+
+        self.menu.addSeparator()
+
+        # 延迟与取消
+        delay_text = format_time(parent.args.delay)
+        delay_action = Action(FluentIcon.DATE_TIME, f"延迟{delay_text}", parent, triggered=parent.on_third_clicked)
+        self.menu.addAction(delay_action)
+
+        cancel_action = Action(FluentIcon.CLOSE, "取消关机计划", parent, triggered=parent.cancel_shutdown)
+        self.menu.addAction(cancel_action)
+
+        self.setContextMenu(self.menu)
+        self.setToolTip(f"Waity：{time_text}后自动关机")
+
+
 class MainWindow(QWidget):
     """全屏透明主窗口"""
 
@@ -166,27 +196,7 @@ class MainWindow(QWidget):
         self.message_box.show()
 
     def _init_tray(self):
-        self.tray_icon = QSystemTrayIcon(self)
-        self.tray_icon.setIcon(QIcon(self.icon_path))
-        time_text = format_time(self.remaining)
-        self.tray_icon.setToolTip(f"Waity：{time_text}后自动关机")
-
-        # 创建托盘菜单
-        tray_menu = QMenu()
-
-        self.time_action = QAction(f"剩余时间：{time_text}", self)
-        tray_menu.addAction(self.time_action)
-
-        delay_text = format_time(self.args.delay)
-        delay_action = QAction(f"延迟 {delay_text}", self)
-        delay_action.triggered.connect(self.on_third_clicked)
-        tray_menu.addAction(delay_action)
-
-        cancel_action = QAction("取消关机计划", self)
-        cancel_action.triggered.connect(self.cancel_shutdown)
-        tray_menu.addAction(cancel_action)
-
-        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon = SystemTrayIcon(self)
         self.tray_icon.activated.connect(self.on_tray_activated)
         self.tray_icon.show()
 
@@ -198,7 +208,7 @@ class MainWindow(QWidget):
         self.message_box.remaining = self.remaining
         self.message_box.update_subtitle()
         time_text = format_time(self.remaining)
-        self.time_action.setText(f"剩余时间：{time_text}")
+        self.tray_icon.time_action.setText(f"剩余时间：{time_text}")
         self.tray_icon.setToolTip(f"Waity：{time_text}后自动关机")
 
     def closeEvent(self, event):
