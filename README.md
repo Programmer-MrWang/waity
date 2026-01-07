@@ -67,9 +67,8 @@ Waity 支持通过命令行参数自定义启动行为。您可以组合使用 `
 | `--show-in-taskbar` | 是否在任务栏中显示图标 | - | 不显示 |
 
 > [!IMPORTANT]
-> - `--countdown` 和 `--delay` 必须为大于 0 的整数。
-> - `--reminder` 必须为大于等于 0 的整数。
-> - `--reminder` 必须小于或等于 `--delay`。
+> - `--countdown`, `--delay`, `--reminder` 必须为大于 0 的整数。
+> - `--reminder` 必须小于 `--delay`。
 
 #### 样例
 

@@ -240,12 +240,12 @@ def main() -> None:
     parser.add_argument('--show-in-taskbar', action='store_true', help='显示在任务栏中（默认不显示）')
     args = parser.parse_args()
 
-    if args.countdown <= 0 or args.delay <= 0 or args.reminder < 0:
-        print("错误：--countdown 和 --delay 必须是非零自然数，--reminder 必须是非负整数")
+    if args.countdown <= 0 or args.delay <= 0 or args.reminder <= 0:
+        print("错误：--countdown, --delay, --reminder 参数必须为大于 0 的整数")
         sys.exit(1)
 
     if args.reminder > args.delay:
-        print("错误：--reminder 必须小于或等于 --delay")
+        print("错误：--reminder 必须小于 --delay")
         sys.exit(1)
 
     app = QApplication(sys.argv)
