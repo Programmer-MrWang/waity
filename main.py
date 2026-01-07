@@ -3,7 +3,7 @@ import argparse
 import os
 
 from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, QSystemTrayIcon, QMenu
-from PySide6.QtCore import QTimer, Qt
+from PySide6.QtCore import QTimer, Qt, QPropertyAnimation, QEasingCurve, QPoint
 from PySide6.QtGui import QIcon, QAction
 from qfluentwidgets import (
     BodyLabel,
@@ -89,6 +89,30 @@ class ShutdownMessageBox(MessageBoxBase):
         self.contentLabel.setText(
             f"计算机将在{time_text}后自动关闭。请及时保存您的工作或选择其他操作。"
         )
+
+    def mousePressEvent(self, event):
+        if not self.widget.geometry().contains(event.position().toPoint()):
+            if not self.args.no_beep:
+                if sys.platform == "win32":
+                    import winsound
+                    winsound.MessageBeep()
+                else:
+                    QApplication.beep()
+
+            if not self.args.no_shake:
+                # 抖动动画
+                pos = self.widget.pos()
+                self.ani = QPropertyAnimation(self.widget, b"pos")
+                self.ani.setDuration(300)
+                self.ani.setStartValue(pos)
+                self.ani.setKeyValueAt(0.1, pos + QPoint(-5, 0))
+                self.ani.setKeyValueAt(0.3, pos + QPoint(5, 0))
+                self.ani.setKeyValueAt(0.5, pos + QPoint(-5, 0))
+                self.ani.setKeyValueAt(0.7, pos + QPoint(5, 0))
+                self.ani.setKeyValueAt(0.9, pos + QPoint(-5, 0))
+                self.ani.setEndValue(pos)
+                self.ani.start()
+        super().mousePressEvent(event)
 
 
 class MainWindow(QWidget):
@@ -243,6 +267,8 @@ def main() -> None:
     parser.add_argument('--delay', type=int, default=180, help='延迟选项时长（秒），默认 180 秒（3 分钟）')
     parser.add_argument('--reminder', type=int, default=60, help='关机前再次提醒的时长（秒），默认 60 秒')
     parser.add_argument('--show-in-taskbar', action='store_true', help='显示在任务栏中（默认不显示）')
+    parser.add_argument('--no-beep', action='store_true', help='禁用点击空白处的提示音')
+    parser.add_argument('--no-shake', action='store_true', help='禁用点击空白处的抖动动画')
     args = parser.parse_args()
 
     if args.countdown <= 0 or args.delay <= 0 or args.reminder <= 0:
