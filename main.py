@@ -211,7 +211,7 @@ class MainWindow(QWidget):
         self.tray_icon.show()
 
     def on_tray_activated(self, reason):
-        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
             self.show_reminder()
 
     def update_ui(self):
