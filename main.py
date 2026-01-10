@@ -260,8 +260,9 @@ class MainWindow(QWidget):
         QApplication.quit()
 
     def on_primary_clicked(self):
-        self.message_box.hide()
-        self.hide()
+        self.message_box.close()
+        # 延迟关闭窗口，让 MessageBox 动画播放完成
+        QTimer.singleShot(500, self.hide)
 
     def on_secondary_clicked(self):
         self.perform_shutdown()
@@ -278,7 +279,7 @@ class MainWindow(QWidget):
             self.update_ui()
         self.message_box.close()
         # 延迟关闭窗口，让 MessageBox 动画播放完成
-        QTimer.singleShot(300, self.hide)
+        QTimer.singleShot(500, self.hide)
 
 
 def main() -> None:
