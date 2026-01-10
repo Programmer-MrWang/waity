@@ -247,7 +247,10 @@ class MainWindow(QWidget):
     def perform_shutdown(self):
         # 这里添加关机命令
         import os
-        os.system("shutdown /s /t 0")
+        cmd = "shutdown /s /t 0"
+        if self.args.force:
+            cmd = "shutdown /s /f /t 0"
+        os.system(cmd)
 
     def cancel_shutdown(self):
         self.message_box.close()
@@ -290,6 +293,7 @@ def main() -> None:
     parser.add_argument('--show-in-taskbar', action='store_true', help='显示在任务栏中（默认不显示）')
     parser.add_argument('--no-beep', action='store_true', help='禁用点击空白处的提示音')
     parser.add_argument('--no-shake', action='store_true', help='禁用点击空白处的抖动动画')
+    parser.add_argument('--force', action='store_true', help='强制关机')
     args = parser.parse_args()
 
     if args.countdown <= 0 or args.delay <= 0 or args.reminder <= 0:

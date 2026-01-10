@@ -67,6 +67,7 @@ Waity 支持通过命令行参数自定义启动行为。您可以组合使用 `
 | `--show-in-taskbar` | 是否在任务栏中显示图标 | - | 无（不显示） |
 | `--no-beep` | 禁用点击空白处的提示音 | - | 无（开启） |
 | `--no-shake` | 禁用点击空白处的抖动动画 | - | 无（开启） |
+| `--force` | 强制关机（使用 `shutdown /s /f /t 0`） | - | 无（关闭） |
 
 > [!IMPORTANT]
 > - `--countdown`, `--delay`, `--reminder` 必须为大于 0 的整数。
@@ -96,6 +97,10 @@ Waity 支持通过命令行参数自定义启动行为。您可以组合使用 `
 
 ```shell
 .\main.exe --no-beep --no-shake  # 禁用点击空白处的提示音和抖动动画
+```
+
+```shell
+.\main.exe --force # 使用强制关机模式
 ```
 ## 许可证
 
