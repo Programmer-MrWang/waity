@@ -295,10 +295,6 @@ def main() -> None:
         print("错误：--countdown, --delay, --reminder 参数必须为大于 0 的整数")
         sys.exit(1)
 
-    if args.reminder > args.delay:
-        print("错误：--reminder 必须小于 --delay")
-        sys.exit(1)
-
     app = QApplication(sys.argv)
     window = MainWindow(args)
     window.show()
