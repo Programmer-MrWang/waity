@@ -2,13 +2,16 @@ import sys
 import argparse
 import os
 
-from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, QSystemTrayIcon
-from PySide6.QtCore import QTimer, Qt, QPropertyAnimation, QEasingCurve, QPoint
+from PySide6.QtWidgets import QApplication, QWidget, QSystemTrayIcon
+from PySide6.QtCore import QTimer, Qt, QPropertyAnimation, QPoint
 from PySide6.QtGui import QIcon
+from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from qfluentwidgets import (
     Action,
     BodyLabel,
     FluentIcon,
+    InfoBar,
+    InfoBarPosition,
     MessageBoxBase,
     PrimaryPushButton,
     PushButton,
@@ -189,6 +192,8 @@ class MainWindow(QWidget):
 
         self._init_ui()
         self._init_tray()
+        self.socket_name = "waity_single_instance_socket"
+        self._init_server()
 
     def _init_ui(self) -> None:
         # 创建消息框
@@ -209,6 +214,31 @@ class MainWindow(QWidget):
         self.tray_icon = SystemTrayIcon(self)
         self.tray_icon.activated.connect(self.on_tray_activated)
         self.tray_icon.show()
+
+    def _init_server(self):
+        self.server = QLocalServer(self)
+        self.server.removeServer(self.socket_name)
+        self.server.listen(self.socket_name)
+        self.server.newConnection.connect(self.handle_connection)
+
+    def handle_connection(self):
+        socket = self.server.nextPendingConnection()
+        if socket.waitForReadyRead(500):
+            data = socket.readAll().data().decode()
+            if data == "SHOW":
+                self.show_reminder()
+                InfoBar.warning(
+                    title='重复启动',
+                    content="已唤起原有的 Waity 实例。",
+                    orient=Qt.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP,
+                    duration=5000,
+                    parent=self.message_box
+                )
+            elif data == "QUIT":
+                self.quit_app()
+        socket.disconnectFromServer()
 
     def on_tray_activated(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
@@ -294,6 +324,7 @@ def main() -> None:
     parser.add_argument('--no-beep', action='store_true', help='禁用点击空白处的提示音')
     parser.add_argument('--no-shake', action='store_true', help='禁用点击空白处的抖动动画')
     parser.add_argument('--force', action='store_true', help='强制关机')
+    parser.add_argument('--overwrite', action='store_true', help='如果已有实例在运行，则覆盖它')
     args = parser.parse_args()
 
     if args.countdown <= 0 or args.delay <= 0 or args.reminder <= 0:
@@ -301,6 +332,26 @@ def main() -> None:
         sys.exit(1)
 
     app = QApplication(sys.argv)
+
+    # 单实例检查
+    socket_name = "waity_single_instance_socket"
+    socket = QLocalSocket()
+    socket.connectToServer(socket_name)
+    if socket.waitForConnected(500):
+        if args.overwrite:
+            socket.write(b"QUIT")
+            socket.waitForBytesWritten()
+            socket.disconnectFromServer()
+            # 给一点时间让旧进程退出并释放 server
+            import time
+            time.sleep(0.5)
+        else:
+            socket.write(b"SHOW")
+            socket.waitForBytesWritten()
+            socket.disconnectFromServer()
+            print("有运行中的 Waity 实例，已唤起原实例。使用 --overwrite 参数可以覆盖原有实例。")
+            return
+
     window = MainWindow(args)
     window.show()
     sys.exit(app.exec())
