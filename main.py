@@ -89,6 +89,9 @@ class ShutdownMessageBox(MessageBoxBase):
         self.buttonLayout.addWidget(self.third_btn)
         self.buttonLayout.addWidget(self.close_btn)
 
+        if self.args.hide_cancel:
+            self.close_btn.hide()
+
     def update_subtitle(self) -> None:
         time_text = format_time(self.remaining)
         self.contentLabel.setText(
@@ -151,8 +154,9 @@ class SystemTrayIcon(QSystemTrayIcon):
         delay_action = Action(FluentIcon.DATE_TIME, f"延迟{delay_text}", parent, triggered=parent.on_third_clicked)
         self.menu.addAction(delay_action)
 
-        cancel_action = Action(FluentIcon.CLOSE, "取消关机计划", parent, triggered=parent.cancel_shutdown)
-        self.menu.addAction(cancel_action)
+        if not parent.args.hide_cancel:
+            cancel_action = Action(FluentIcon.CLOSE, "取消关机计划", parent, triggered=parent.cancel_shutdown)
+            self.menu.addAction(cancel_action)
 
         self.setContextMenu(self.menu)
         self.setToolTip(f"Waity：{time_text}后自动关机")
@@ -324,6 +328,7 @@ def main() -> None:
     parser.add_argument('--no-beep', action='store_true', help='禁用点击空白处的提示音')
     parser.add_argument('--no-shake', action='store_true', help='禁用点击空白处的抖动动画')
     parser.add_argument('--force', action='store_true', help='强制关机')
+    parser.add_argument('--hide-cancel', action='store_true', help='隐藏“取消关机计划”按钮')
     parser.add_argument('--overwrite', action='store_true', help='如果已有实例在运行，则覆盖它')
     args = parser.parse_args()
 
